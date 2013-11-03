@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">reCAPTCHA Sample</string>
+    <string name="instruction">Enter the words above</string>
+    <string name="verify">Verify</string>
+    <string name="reload">Reload</string>
+    <string name="show_error">Failed to show CAPTCHA</string>
+    <string name="verification_success">Your answer is verified successfully</string>
+    <string name="verification_failed">You did not enter the CAPTCHA phrase correctly</string>
+</resources>
