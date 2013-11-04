@@ -10,8 +10,8 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 public class SampleActivity extends Activity implements View.OnClickListener, ReCaptcha.OnShowChallengeListener, ReCaptcha.OnVerifyAnswerListener {
-    private static final String PUBLIC_KEY  = "6LcPWugSAAAAAC-MP5sg6wp_CQiyxHvPvkQvVlVf";//"your-public-key";
-    private static final String PRIVATE_KEY = "6LcPWugSAAAAALWMp-gg9QkykQQyO6ePBSUk-Hjg";//"your-private-key";
+    private static final String PUBLIC_KEY  = "your-public-key";
+    private static final String PRIVATE_KEY = "your-private-key";
 
     private ReCaptcha   reCaptcha;
     private ProgressBar progress;
