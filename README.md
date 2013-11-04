@@ -1,4 +1,4 @@
-Android-Lib-ReCaptcha
+Android-Lib-reCAPTCHA
 =====================
 
 The reCAPTCHA Android Library provides a simple way to show a <a href="http://www.google.com/recaptcha/captcha">CAPTCHA</a> as an <code>ImageView</code> in your Android app, helping you stop bots from abusing it. The library wraps the <a href="https://developers.google.com/recaptcha/intro">reCAPTCHA API</a>.
