@@ -5,6 +5,8 @@ The reCAPTCHA Android Library provides a simple way to show a <a href="http://ww
 
 To use reCAPTCHA with Android, you can download the <a href="https://github.com/ayltai/Android-Lib-reCAPTCHA/blob/master/reCAPTCHA-Samples/libs/android-lib-recaptcha-0.0.1-SNAPSHOT.jar">reCAPTCHA Android Library here</a>. Typically the only thing you'll need is the jar file (android-lib-recaptcha-x.x.x.jar), which you have to copy to a place where it can be loaded by your IDE. For example, if you are using Eclipse, you can put the jar file in a directory called /libs.
 
+<img src="https://raw.githubusercontent.com/ayltai/Android-Lib-reCAPTCHA/master/screenshot.png" width="422" height="714" alt="Screenshot" />
+
 Quick Start
 -----------
 

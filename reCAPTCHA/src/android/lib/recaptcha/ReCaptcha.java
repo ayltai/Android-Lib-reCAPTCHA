@@ -141,7 +141,12 @@ public class ReCaptcha extends ImageView {
         final Handler handler = new Handler() {
             @Override
             public void handleMessage(final Message message) {
-                ReCaptcha.this.setImageBitmap((Bitmap)message.obj);
+                final Bitmap bitmap = (Bitmap)message.obj;
+                final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth() * 2, bitmap.getHeight() * 2, true);
+
+                bitmap.recycle();
+
+                ReCaptcha.this.setImageBitmap(scaled);
 
                 if (listener != null) {
                     listener.onChallengeShown(message.obj != null);
