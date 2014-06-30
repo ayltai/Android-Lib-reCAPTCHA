@@ -271,7 +271,7 @@ public class ReCaptcha extends ImageView {
             if (imageToken == null) {
                 throw new ReCaptchaException("Image token not found");
             }
-
+            this.imageToken = imageToken;     
             final String imageUrl = String.format(ReCaptcha.IMAGE_URL, imageToken);
 
             final HttpResponse response = httpClient.execute(new HttpGet(imageUrl));
