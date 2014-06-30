@@ -290,7 +290,7 @@ public class ReCaptcha extends ImageView {
                 }
             }
         } catch (JSONException e) {
-            e.printStackTrace();
+            throw new ReCaptchaException("Unable to parse challenge response");
         } finally {
             httpClient.getConnectionManager().shutdown();
         }
