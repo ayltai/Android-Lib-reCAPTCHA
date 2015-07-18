@@ -1,6 +1,8 @@
 Android-Lib-reCAPTCHA
 =====================
 
+[ ![Download](https://api.bintray.com/packages/ayltai/maven/Android-Lib-reCAPTCHA/images/download.svg) ](https://bintray.com/ayltai/maven/Android-Lib-reCAPTCHA/_latestVersion)
+
 The reCAPTCHA Android Library provides a simple way to show a <a href="http://www.google.com/recaptcha/captcha">CAPTCHA</a> as an <code>ImageView</code> in your Android app, helping you stop bots from abusing it. The library wraps the <a href="https://developers.google.com/recaptcha/intro">reCAPTCHA API</a>.
 
 <img src="https://raw.githubusercontent.com/ayltai/Android-Lib-reCAPTCHA/master/screenshot.png" width="422" height="714" alt="Screenshot" />
