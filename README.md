@@ -3,14 +3,24 @@ Android-Lib-reCAPTCHA
 
 The reCAPTCHA Android Library provides a simple way to show a <a href="http://www.google.com/recaptcha/captcha">CAPTCHA</a> as an <code>ImageView</code> in your Android app, helping you stop bots from abusing it. The library wraps the <a href="https://developers.google.com/recaptcha/intro">reCAPTCHA API</a>.
 
-To use reCAPTCHA with Android, you can download the <a href="https://github.com/ayltai/Android-Lib-reCAPTCHA/blob/master/reCAPTCHA-Samples/libs/android-lib-recaptcha-0.0.1-SNAPSHOT.jar">reCAPTCHA Android Library here</a>. Typically the only thing you'll need is the jar file (android-lib-recaptcha-x.x.x.jar), which you have to copy to a place where it can be loaded by your IDE. For example, if you are using Eclipse, you can put the jar file in a directory called /libs.
-
 <img src="https://raw.githubusercontent.com/ayltai/Android-Lib-reCAPTCHA/master/screenshot.png" width="422" height="714" alt="Screenshot" />
 
 Quick Start
 -----------
 
-After you've <a href="http://www.google.com/recaptcha/whyrecaptcha">signed up for your API keys</a> and downloaded the <a href="https://github.com/ayltai/Android-Lib-reCAPTCHA/blob/master/reCAPTCHA-Samples/libs/android-lib-recaptcha-0.0.1-SNAPSHOT.jar">reCAPTCHA Android Library</a>, below are basic instructions for using <a href="http://www.google.com/recaptcha/captcha">CAPTCHA</a> in your Android application.
+First you have to <a href="http://www.google.com/recaptcha/whyrecaptcha">sign up for your API keys</a>.
+
+**Installation**
+
+<pre>
+repositories {
+    jcenter()
+}
+
+dependencies {
+    compile 'android.lib.recaptcha:reCAPTCHA:+'
+}
+</pre>
 
 **The Layout**
 

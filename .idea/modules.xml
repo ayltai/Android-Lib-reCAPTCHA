@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/Android-Lb-reCAPTCHA.iml" filepath="$PROJECT_DIR$/Android-Lb-reCAPTCHA.iml" />
+      <module fileurl="file://$PROJECT_DIR$/reCAPTCHA/reCAPTCHA.iml" filepath="$PROJECT_DIR$/reCAPTCHA/reCAPTCHA.iml" />
+      <module fileurl="file://$PROJECT_DIR$/reCAPTCHA-Samples/reCAPTCHA-Samples.iml" filepath="$PROJECT_DIR$/reCAPTCHA-Samples/reCAPTCHA-Samples.iml" />
+    </modules>
+  </component>
+</project>
