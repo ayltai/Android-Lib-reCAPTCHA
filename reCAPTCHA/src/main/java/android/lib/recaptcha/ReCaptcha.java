@@ -187,7 +187,7 @@
  *       same "printed page" as the copyright notice for easier
  *       identification within third-party archives.
  *
- *    Copyright $date.year Alan Tai
+ *    Copyright 2016 Alan Tai
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -207,8 +207,10 @@ package android.lib.recaptcha;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -231,6 +233,7 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -277,8 +280,9 @@ public class ReCaptcha extends ImageView {
     private static final String RECAPTCHA_OBJECT_TOKEN_URL = "http://www.google.com/recaptcha/api/reload?c=%s&k=%s&type=%s";
     private static final String IMAGE_URL                  = "http://www.google.com/recaptcha/api/image?c=%s";
 
-    private String                  imageToken;
-    private HashMap<String, String> publicKeyChallengeMap = new HashMap<>();
+    private final HashMap<String, String> publicKeyChallengeMap = new HashMap<>();
+
+    private String imageToken;
 
     public ReCaptcha(final Context context) {
         super(context);
@@ -302,6 +306,15 @@ public class ReCaptcha extends ImageView {
      */
     protected HttpClient createHttpClient() {
         return new DefaultHttpClient();
+    }
+
+    /**
+     * Returns a read-only mapping of public keys to challenges previously returned from the server.
+     * <p>The challenge previously returned from the server will be available after {@link #showChallenge(String)} returns or after {@link ReCaptcha.OnShowChallengeListener#onChallengeShown(boolean)} is called.</p>
+     * @return A read-only mapping of public keys to challenges previously returned from the server.
+     */
+    public final Map<String, String> getChallenges() {
+        return Collections.unmodifiableMap(this.publicKeyChallengeMap);
     }
 
     /**
@@ -344,7 +357,7 @@ public class ReCaptcha extends ImageView {
      * @param listener  The callback to call when an attempt to show a <a href="http://captcha.net/">CAPTCHA</a> is completed.
      * @see #showChallenge(String)
      */
-    public final void showChallengeAsync(final String publicKey, final OnShowChallengeListener listener) {
+    public final void showChallengeAsync(final String publicKey, final ReCaptcha.OnShowChallengeListener listener) {
         if (TextUtils.isEmpty(publicKey)) {
             throw new IllegalArgumentException("publicKey cannot be null or empty");
         }
@@ -425,7 +438,7 @@ public class ReCaptcha extends ImageView {
      * @param listener   The callback to call when an answer entered by the user is verified.
      * @see #verifyAnswer(String, String)
      */
-    public final void verifyAnswerAsync(final String privateKey, final String answer, final OnVerifyAnswerListener listener) {
+    public final void verifyAnswerAsync(final String privateKey, final String answer, final ReCaptcha.OnVerifyAnswerListener listener) {
         if (TextUtils.isEmpty(privateKey)) {
             throw new IllegalArgumentException("privateKey cannot be null or empty");
         }
@@ -510,15 +523,15 @@ public class ReCaptcha extends ImageView {
             final String imageTokenResponse = httpClient.execute(new HttpGet(String.format(ReCaptcha.RECAPTCHA_OBJECT_TOKEN_URL, challenge, publicKey, "image")), new BasicResponseHandler());
             Log.d(ReCaptcha.TAG, "imageTokenResponse = " + imageTokenResponse);
 
-            return substringBetween(imageTokenResponse, "('", "',");
+            return ReCaptcha.substringBetween(imageTokenResponse, "('", "',");
         } finally {
             httpClient.getConnectionManager().shutdown();
         }
     }
 
     private String getChallenge(final String publicKey) throws IOException, JSONException {
-        if (publicKeyChallengeMap.containsKey(publicKey)) {
-            return publicKeyChallengeMap.get(publicKey);
+        if (this.publicKeyChallengeMap.containsKey(publicKey)) {
+            return this.publicKeyChallengeMap.get(publicKey);
         }
 
         final HttpClient httpClient = this.createHttpClient();
@@ -527,9 +540,9 @@ public class ReCaptcha extends ImageView {
             final String challengeResponse = httpClient.execute(new HttpGet(String.format(ReCaptcha.CHALLENGE_URL, publicKey)), new BasicResponseHandler());
             Log.d(ReCaptcha.TAG, "challengeResponse = " + challengeResponse);
 
-            final String challenge = new JSONObject(substringBetween(challengeResponse, "RecaptchaState = ", "}") + "}").getString("challenge");
+            final String challenge = new JSONObject(ReCaptcha.substringBetween(challengeResponse, "RecaptchaState = ", "}") + "}").getString("challenge");
 
-            publicKeyChallengeMap.put(publicKey, challenge);
+            this.publicKeyChallengeMap.put(publicKey, challenge);
 
             return challenge;
         } finally {
