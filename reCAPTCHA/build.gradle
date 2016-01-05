@@ -205,7 +205,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
 group   = 'android.lib.recaptcha'
-version = '1.0.1'
+version = '1.0.2'
 
 android {
     compileSdkVersion 22
@@ -214,8 +214,8 @@ android {
     defaultConfig {
         minSdkVersion 4
         targetSdkVersion 22
-        versionCode 2
-        versionName "1.0.1"
+        versionCode 3
+        versionName "1.0.2"
     }
 
     buildTypes {
