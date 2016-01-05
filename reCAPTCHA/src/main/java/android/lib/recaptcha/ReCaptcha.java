@@ -215,6 +215,7 @@ import java.util.Map;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Message;
@@ -232,6 +233,7 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 
 import org.json.JSONException;
@@ -280,8 +282,7 @@ public class ReCaptcha extends ImageView {
     private static final String RECAPTCHA_OBJECT_TOKEN_URL = "http://www.google.com/recaptcha/api/reload?c=%s&k=%s&type=%s";
     private static final String IMAGE_URL                  = "http://www.google.com/recaptcha/api/image?c=%s";
 
-    private final HashMap<String, String> publicKeyChallengeMap = new HashMap<>();
-
+    private String challenge;
     private String imageToken;
 
     public ReCaptcha(final Context context) {
@@ -297,24 +298,33 @@ public class ReCaptcha extends ImageView {
     }
 
     /**
-     * Returns a new instance of {@link org.apache.http.client.HttpClient} for downloading ReCaptcha images.
-     * <p>Subclasses may override this method and return a customized {@link org.apache.http.client.HttpClient},
-     * such as an {@link android.net.http.AndroidHttpClient} with custom {@link org.apache.http.params.HttpParams}.</p>
-     * <p>The default behavior returns a {@link org.apache.http.impl.client.DefaultHttpClient}</p>
+     * Returns a new instance of {@link HttpClient} for downloading ReCaptcha images.
+     * <p>Subclasses may override this method and return a customized {@link HttpClient},
+     * such as an {@link AndroidHttpClient} with custom {@link HttpParams}.</p>
+     * <p>The default behavior returns a {@link DefaultHttpClient}</p>
      *
-     * @return a {@link org.apache.http.client.HttpClient} for downloading ReCaptcha images.
+     * @return a {@link HttpClient} for downloading ReCaptcha images.
      */
     protected HttpClient createHttpClient() {
         return new DefaultHttpClient();
     }
 
     /**
-     * Returns a read-only mapping of public keys to challenges previously returned from the server.
+     * Returns the challenge previously returned from the server.
      * <p>The challenge previously returned from the server will be available after {@link #showChallenge(String)} returns or after {@link ReCaptcha.OnShowChallengeListener#onChallengeShown(boolean)} is called.</p>
-     * @return A read-only mapping of public keys to challenges previously returned from the server.
+     * @return The challenge previously returned from the server.
      */
-    public final Map<String, String> getChallenges() {
-        return Collections.unmodifiableMap(this.publicKeyChallengeMap);
+    public final String getChallenge() {
+        return this.challenge;
+    }
+
+    /**
+     * Returns the image token previously returned from the server.
+     * <p>The image token previously returned from the server will be available after {@link #showChallenge(String)} returns or after {@link ReCaptcha.OnShowChallengeListener#onChallengeShown(boolean)} is called.</p>
+     * @return The image token previously returned from the server.
+     */
+    public final String getImageToken() {
+        return this.imageToken;
     }
 
     /**
@@ -323,14 +333,14 @@ public class ReCaptcha extends ImageView {
      * for your application.</p>
      * <p>This method executes synchronously and should not be invoked from the UI thread.
      * For asynchronous invocation, you may use {@link android.os.AsyncTask} or call
-     * {@link #showChallengeAsync(String, android.lib.recaptcha.ReCaptcha.OnShowChallengeListener)} instead.</p>
+     * {@link #showChallengeAsync(String, ReCaptcha.OnShowChallengeListener)} instead.</p>
      *
      * @param publicKey The public key that is unique to your domain and sub-domains (unless it is a global key).
      * @return {@code true} if a <a href="http://captcha.net/">CAPTCHA</a> {@link android.graphics.Bitmap}
      * is successfully downloaded and shown; otherwise, {@code false}.
      * @throws android.lib.recaptcha.ReCaptchaException if the downloaded <a href="http://captcha.net/">CAPTCHA</a> content is malformed.
      * @throws java.io.IOException                      in case of a protocol or network connection problem.
-     * @see #showChallengeAsync(String, android.lib.recaptcha.ReCaptcha.OnShowChallengeListener)
+     * @see #showChallengeAsync(String, ReCaptcha.OnShowChallengeListener)
      */
     public final boolean showChallenge(final String publicKey) throws ReCaptchaException, IOException {
         if (TextUtils.isEmpty(publicKey)) {
@@ -339,6 +349,7 @@ public class ReCaptcha extends ImageView {
 
         this.setImageDrawable(null);
 
+        this.challenge  = null;
         this.imageToken = null;
 
         final Bitmap bitmap = this.downloadImage(publicKey);
@@ -364,6 +375,7 @@ public class ReCaptcha extends ImageView {
 
         this.setImageDrawable(null);
 
+        this.challenge  = null;
         this.imageToken = null;
 
         final Handler handler = new Handler() {
@@ -408,14 +420,14 @@ public class ReCaptcha extends ImageView {
      * displaying <a href="https://developers.google.com/recaptcha/">reCAPTCHA</a>.
      * <p>This method executes synchronously and should not be invoked from the UI thread.
      * For asynchronous invocation, you may use {@link android.os.AsyncTask} or call
-     * {@link #verifyAnswerAsync(String, String, android.lib.recaptcha.ReCaptcha.OnVerifyAnswerListener)} instead.</p>
+     * {@link #verifyAnswerAsync(String, String, ReCaptcha.OnVerifyAnswerListener)} instead.</p>
      *
      * @param privateKey The private key that is unique to your domain and sub-domains (unless it is a global key).
      * @param answer     The string the user entered to solve the <a href="http://captcha.net/">CAPTCHA</a> displayed.
      * @return {@code true} if the <a href="https://developers.google.com/recaptcha/">reCAPTCHA</a> was successful;
      * otherwise {@code false}.
      * @throws java.io.IOException in case of a protocol or network connection problem.
-     * @see #verifyAnswerAsync(String, String, android.lib.recaptcha.ReCaptcha.OnVerifyAnswerListener)
+     * @see #verifyAnswerAsync(String, String, ReCaptcha.OnVerifyAnswerListener)
      */
     public final boolean verifyAnswer(final String privateKey, final String answer) throws IOException {
         if (TextUtils.isEmpty(privateKey)) {
@@ -530,21 +542,15 @@ public class ReCaptcha extends ImageView {
     }
 
     private String getChallenge(final String publicKey) throws IOException, JSONException {
-        if (this.publicKeyChallengeMap.containsKey(publicKey)) {
-            return this.publicKeyChallengeMap.get(publicKey);
-        }
-
         final HttpClient httpClient = this.createHttpClient();
 
         try {
             final String challengeResponse = httpClient.execute(new HttpGet(String.format(ReCaptcha.CHALLENGE_URL, publicKey)), new BasicResponseHandler());
             Log.d(ReCaptcha.TAG, "challengeResponse = " + challengeResponse);
 
-            final String challenge = new JSONObject(ReCaptcha.substringBetween(challengeResponse, "RecaptchaState = ", "}") + "}").getString("challenge");
+            this.challenge = new JSONObject(ReCaptcha.substringBetween(challengeResponse, "RecaptchaState = ", "}") + "}").getString("challenge");;
 
-            this.publicKeyChallengeMap.put(publicKey, challenge);
-
-            return challenge;
+            return this.challenge;
         } finally {
             httpClient.getConnectionManager().shutdown();
         }
