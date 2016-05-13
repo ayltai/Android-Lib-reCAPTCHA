@@ -10,7 +10,7 @@ The reCAPTCHA Android Library provides a simple way to show a <a href="http://ww
 Quick Start
 -----------
 
-First you have to <a href="http://www.google.com/recaptcha/whyrecaptcha">sign up for your API keys</a>.
+First you have to <a href="https://www.google.com/recaptcha/admin">sign up for your API keys</a>.
 
 **Installation**
 
