@@ -206,43 +206,47 @@ package android.lib.recaptcha;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.support.annotation.UiThread;
+import android.support.annotation.WorkerThread;
+import android.support.v4.os.AsyncTaskCompat;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.widget.ImageView;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HTTP;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import okhttp3.FormBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
 /**
  * {@code ReCaptcha} extends {@link android.widget.ImageView} to let you embed a <a href="http://captcha.net/">CAPTCHA</a>
  * in your applications in order to protect them against spam and other types of automated abuse.
- *
  * @see <a href="https://developers.google.com/recaptcha/">reCAPTCHA</a>
  */
 public class ReCaptcha extends ImageView {
@@ -253,9 +257,8 @@ public class ReCaptcha extends ImageView {
     public interface OnShowChallengeListener {
         /**
          * Called when an attempt to show a <a href="http://captcha.net/">CAPTCHA</a> is completed.
-         *
          * @param shown {@code true} if a <a href="http://captcha.net/">CAPTCHA</a> is shown;
-         *              otherwise, {@code false}.
+         * otherwise, {@code false}.
          */
         void onChallengeShown(boolean shown);
     }
@@ -277,13 +280,20 @@ public class ReCaptcha extends ImageView {
 
     private static final String TAG = "ReCaptcha";
 
+    //region Constants
+
     private static final String VERIFICATION_URL           = "http://www.google.com/recaptcha/api/verify";
     private static final String CHALLENGE_URL              = "http://www.google.com/recaptcha/api/challenge?k=%s";
     private static final String RECAPTCHA_OBJECT_TOKEN_URL = "http://www.google.com/recaptcha/api/reload?c=%s&k=%s&type=%s";
     private static final String IMAGE_URL                  = "http://www.google.com/recaptcha/api/image?c=%s";
 
+    //endregion
+
     private String challenge;
     private String imageToken;
+    private String languageCode;
+
+    //region Constructors
 
     public ReCaptcha(final Context context) {
         super(context);
@@ -297,21 +307,13 @@ public class ReCaptcha extends ImageView {
         super(context, attrs, defStyle);
     }
 
-    /**
-     * Returns a new instance of {@link HttpClient} for downloading ReCaptcha images.
-     * <p>Subclasses may override this method and return a customized {@link HttpClient},
-     * such as an {@link AndroidHttpClient} with custom {@link HttpParams}.</p>
-     * <p>The default behavior returns a {@link DefaultHttpClient}</p>
-     *
-     * @return a {@link HttpClient} for downloading ReCaptcha images.
-     */
-    protected HttpClient createHttpClient() {
-        return new DefaultHttpClient();
-    }
+    //endregion
+
+    //region Properties
 
     /**
      * Returns the challenge previously returned from the server.
-     * <p>The challenge previously returned from the server will be available after {@link #showChallenge(String)} returns or after {@link ReCaptcha.OnShowChallengeListener#onChallengeShown(boolean)} is called.</p>
+     * <p>The challenge previously returned from the server will be available after {@link ReCaptcha.OnShowChallengeListener#onChallengeShown(boolean)} is called.</p>
      * @return The challenge previously returned from the server.
      */
     public final String getChallenge() {
@@ -320,55 +322,37 @@ public class ReCaptcha extends ImageView {
 
     /**
      * Returns the image token previously returned from the server.
-     * <p>The image token previously returned from the server will be available after {@link #showChallenge(String)} returns or after {@link ReCaptcha.OnShowChallengeListener#onChallengeShown(boolean)} is called.</p>
+     * <p>The image token previously returned from the server will be available after {@link ReCaptcha.OnShowChallengeListener#onChallengeShown(boolean)} is called.</p>
      * @return The image token previously returned from the server.
      */
     public final String getImageToken() {
         return this.imageToken;
     }
 
-    /**
-     * Downloads and shows a <a href="http://captcha.net/">CAPTCHA</a> image.
-     * <p>You can obtain a public key by <a href="http://www.google.com/recaptcha/whyrecaptcha">signing up for API keys</a>
-     * for your application.</p>
-     * <p>This method executes synchronously and should not be invoked from the UI thread.
-     * For asynchronous invocation, you may use {@link android.os.AsyncTask} or call
-     * {@link #showChallengeAsync(String, ReCaptcha.OnShowChallengeListener)} instead.</p>
-     *
-     * @param publicKey The public key that is unique to your domain and sub-domains (unless it is a global key).
-     * @return {@code true} if a <a href="http://captcha.net/">CAPTCHA</a> {@link android.graphics.Bitmap}
-     * is successfully downloaded and shown; otherwise, {@code false}.
-     * @throws android.lib.recaptcha.ReCaptchaException if the downloaded <a href="http://captcha.net/">CAPTCHA</a> content is malformed.
-     * @throws java.io.IOException                      in case of a protocol or network connection problem.
-     * @see #showChallengeAsync(String, ReCaptcha.OnShowChallengeListener)
-     */
-    public final boolean showChallenge(final String publicKey) throws ReCaptchaException, IOException {
-        if (TextUtils.isEmpty(publicKey)) {
-            throw new IllegalArgumentException("publicKey cannot be null or empty");
-        }
-
-        this.setImageDrawable(null);
-
-        this.challenge  = null;
-        this.imageToken = null;
-
-        final Bitmap bitmap = this.downloadImage(publicKey);
-
-        this.setImageBitmap(bitmap);
-
-        return bitmap != null;
+    public final String getLanguageCode() {
+        return this.languageCode;
     }
 
     /**
-     * Downloads and shows a <a href="http://captcha.net/">CAPTCHA</a> image asynchronously.
-     * <p>This method executes asynchronously and can be invoked from the UI thread.
-     * For synchronous invocation, use {@link #showChallenge(String)}.</p>
-     *
-     * @param publicKey The public key that is unique to your domain and sub-domains (unless it is global key).
-     * @param listener  The callback to call when an attempt to show a <a href="http://captcha.net/">CAPTCHA</a> is completed.
-     * @see #showChallenge(String)
+     * Forces the widget to render in a specific language.
+     * <p>Auto-detects the user's language if unspecified.</p>
+     * @param languageCode A valid language code.
+     * @see [https://developers.google.com/recaptcha/docs/language]
      */
-    public final void showChallengeAsync(final String publicKey, final ReCaptcha.OnShowChallengeListener listener) {
+    public void setLanguageCode(final String languageCode) {
+        this.languageCode = languageCode;
+    }
+
+    //endregion
+
+    /**
+     * Downloads and shows a <a href="http://captcha.net/">CAPTCHA</a> image asynchronously.
+     * <p>This method executes asynchronously and can be invoked from the UI thread.</p>
+     * @param publicKey The public key that is unique to your domain and sub-domains (unless it is global key).
+     * @param listener The callback to call when an attempt to show a <a href="http://captcha.net/">CAPTCHA</a> is completed.
+     */
+    @UiThread
+    public final void showChallengeAsync(@NonNull final String publicKey, @Nullable final ReCaptcha.OnShowChallengeListener listener) {
         if (TextUtils.isEmpty(publicKey)) {
             throw new IllegalArgumentException("publicKey cannot be null or empty");
         }
@@ -378,27 +362,11 @@ public class ReCaptcha extends ImageView {
         this.challenge  = null;
         this.imageToken = null;
 
-        final Handler handler = new Handler() {
+        AsyncTaskCompat.executeParallel(new AsyncTask<String, Void, Bitmap>() {
             @Override
-            public void handleMessage(final Message message) {
-                final Bitmap bitmap = (Bitmap) message.obj;
-                final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth() * 2, bitmap.getHeight() * 2, true);
-
-                bitmap.recycle();
-
-                ReCaptcha.this.setImageBitmap(scaled);
-
-                if (listener != null) {
-                    listener.onChallengeShown(message.obj != null);
-                }
-            }
-        };
-
-        new AsyncTask<String, Void, Bitmap>() {
-            @Override
-            protected Bitmap doInBackground(final String... publicKeys) {
+            protected Bitmap doInBackground(final String... strings) {
                 try {
-                    return ReCaptcha.this.downloadImage(publicKeys[0]);
+                    return ReCaptcha.this.downloadImage(publicKey);
                 } catch (final ReCaptchaException e) {
                     Log.e(ReCaptcha.TAG, "The downloaded CAPTCHA content is malformed", e);
                 } catch (final IOException e) {
@@ -410,47 +378,34 @@ public class ReCaptcha extends ImageView {
 
             @Override
             protected void onPostExecute(final Bitmap bitmap) {
-                handler.sendMessage(handler.obtainMessage(0, bitmap));
+                if (bitmap == null) {
+                    if (listener != null) {
+                        listener.onChallengeShown(false);
+                    }
+                } else {
+                    final Bitmap scaled = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth() * 2, bitmap.getHeight() * 2, true);
+
+                    bitmap.recycle();
+
+                    ReCaptcha.this.setImageBitmap(scaled);
+
+                    if (listener != null) {
+                        listener.onChallengeShown(true);
+                    }
+                }
             }
-        }.execute(publicKey);
-    }
-
-    /**
-     * Checks whether the answer entered by the user is correct after your application is successfully
-     * displaying <a href="https://developers.google.com/recaptcha/">reCAPTCHA</a>.
-     * <p>This method executes synchronously and should not be invoked from the UI thread.
-     * For asynchronous invocation, you may use {@link android.os.AsyncTask} or call
-     * {@link #verifyAnswerAsync(String, String, ReCaptcha.OnVerifyAnswerListener)} instead.</p>
-     *
-     * @param privateKey The private key that is unique to your domain and sub-domains (unless it is a global key).
-     * @param answer     The string the user entered to solve the <a href="http://captcha.net/">CAPTCHA</a> displayed.
-     * @return {@code true} if the <a href="https://developers.google.com/recaptcha/">reCAPTCHA</a> was successful;
-     * otherwise {@code false}.
-     * @throws java.io.IOException in case of a protocol or network connection problem.
-     * @see #verifyAnswerAsync(String, String, ReCaptcha.OnVerifyAnswerListener)
-     */
-    public final boolean verifyAnswer(final String privateKey, final String answer) throws IOException {
-        if (TextUtils.isEmpty(privateKey)) {
-            throw new IllegalArgumentException("privateKey cannot be null or empty");
-        }
-
-        if (TextUtils.isEmpty(answer)) {
-            throw new IllegalArgumentException("answer cannot be null or empty");
-        }
-
-        return this.submitAnswer(privateKey, answer);
+        }, publicKey);
     }
 
     /**
      * Checks asynchronously whether the answer entered by the user is correct after your application
      * is successfully displaying <a href="https://developers.google.com/recaptcha/">reCAPTCHA</a>.
-     *
      * @param privateKey The private key that is unique to your domain and sub-domains (unless it is a global key).
-     * @param answer     The string the user entered to solve the <a href="http://captcha.net/">CAPTCHA</a> displayed.
-     * @param listener   The callback to call when an answer entered by the user is verified.
-     * @see #verifyAnswer(String, String)
+     * @param answer The string the user entered to solve the <a href="http://captcha.net/">CAPTCHA</a> displayed.
+     * @param listener The callback to call when an answer entered by the user is verified.
      */
-    public final void verifyAnswerAsync(final String privateKey, final String answer, final ReCaptcha.OnVerifyAnswerListener listener) {
+    @UiThread
+    public final void verifyAnswerAsync(@NonNull final String privateKey, @NonNull final String answer, @Nullable final ReCaptcha.OnVerifyAnswerListener listener) {
         if (TextUtils.isEmpty(privateKey)) {
             throw new IllegalArgumentException("privateKey cannot be null or empty");
         }
@@ -459,22 +414,13 @@ public class ReCaptcha extends ImageView {
             throw new IllegalArgumentException("answer cannot be null or empty");
         }
 
-        final Handler handler = new Handler() {
-            @Override
-            public void handleMessage(final Message message) {
-                if (listener != null) {
-                    listener.onAnswerVerified((Boolean) message.obj);
-                }
-            }
-        };
-
-        new AsyncTask<String, Void, Boolean>() {
+        AsyncTaskCompat.executeParallel(new AsyncTask<String, Void, Boolean>() {
             @Override
             protected Boolean doInBackground(final String... params) {
                 try {
                     return ReCaptcha.this.submitAnswer(params[0], params[1]);
                 } catch (final IOException e) {
-                    Log.e(ReCaptcha.TAG, "A protocol or network connection problem has occurred", e);
+                    Log.e(TAG, e.getMessage(), e);
                 }
 
                 return Boolean.FALSE;
@@ -482,104 +428,168 @@ public class ReCaptcha extends ImageView {
 
             @Override
             protected void onPostExecute(final Boolean result) {
-                handler.sendMessage(handler.obtainMessage(0, result));
+                if (listener != null) {
+                    listener.onAnswerVerified(result);
+                }
             }
-        }.execute(privateKey, answer);
+        }, privateKey, answer);
     }
 
-    private Bitmap downloadImage(final String publicKey) throws ReCaptchaException, IOException {
-        final HttpClient httpClient = this.createHttpClient();
-
+    @WorkerThread
+    private Bitmap downloadImage(@NonNull final String publicKey) throws ReCaptchaException, IOException {
         try {
             final String challenge = this.getChallenge(publicKey);
             Log.d(ReCaptcha.TAG, "challenge = " + challenge);
+
             if (challenge == null) {
                 throw new ReCaptchaException("ReCaptcha challenge not found");
             }
 
-            final String imageToken = this.getImageToken(challenge, publicKey);
+            final String imageToken = ReCaptcha.getImageToken(challenge, publicKey);
             Log.d(ReCaptcha.TAG, "imageToken = " + imageToken);
+
             if (imageToken == null) {
                 throw new ReCaptchaException("Image token not found");
             }
 
             this.imageToken = imageToken;
 
-            final String       imageUrl = String.format(ReCaptcha.IMAGE_URL, imageToken);
-            final HttpResponse response = httpClient.execute(new HttpGet(imageUrl));
+            String url = String.format(ReCaptcha.IMAGE_URL, imageToken);
+
+            if (!TextUtils.isEmpty(this.languageCode)) {
+                url += "&hl=" + this.languageCode;
+            }
+
+            Response response = null;
 
             try {
-                final Bitmap bitmap = BitmapFactory.decodeStream(response.getEntity().getContent());
+                response = new OkHttpClient().newCall(new Request.Builder()
+                    .url(url)
+                    .build()).execute();
 
-                if (bitmap == null) {
-                    throw new ReCaptchaException("Invalid CAPTCHA image");
+                if (response.isSuccessful()) {
+                    final ResponseBody responseBody = response.body();
+
+                    try {
+                        final Bitmap bitmap = BitmapFactory.decodeStream(responseBody.byteStream());
+
+                        if (bitmap == null) {
+                            throw new ReCaptchaException("Invalid CAPTCHA image");
+                        }
+
+                        return bitmap;
+                    } finally {
+                        responseBody.close();
+                    }
                 }
 
-                return bitmap;
+                throw new ReCaptchaException("Received HTTP " + response.code());
             } finally {
-                if (response.getEntity() != null) {
-                    response.getEntity().consumeContent();
+                if (response != null) {
+                    response.close();
                 }
             }
         } catch (final JSONException e) {
             throw new ReCaptchaException("Unable to parse challenge response", e);
-        } finally {
-            httpClient.getConnectionManager().shutdown();
         }
     }
 
-    private String getImageToken(final String challenge, final String publicKey) throws IOException {
-        final HttpClient httpClient = this.createHttpClient();
+    @WorkerThread
+    private static String getImageToken(@NonNull final String challenge, @NonNull final String publicKey) throws ReCaptchaException, IOException {
+        Response response = null;
 
         try {
-            final String imageTokenResponse = httpClient.execute(new HttpGet(String.format(ReCaptcha.RECAPTCHA_OBJECT_TOKEN_URL, challenge, publicKey, "image")), new BasicResponseHandler());
-            Log.d(ReCaptcha.TAG, "imageTokenResponse = " + imageTokenResponse);
+            response = new OkHttpClient().newCall(new Request.Builder()
+                .url(String.format(ReCaptcha.RECAPTCHA_OBJECT_TOKEN_URL, challenge, publicKey, "image"))
+                .build()).execute();
 
-            return ReCaptcha.substringBetween(imageTokenResponse, "('", "',");
+            if (response.isSuccessful()) {
+                final ResponseBody responseBody = response.body();
+
+                try {
+                    final String imageTokenResponse = responseBody.string();
+                    Log.d(ReCaptcha.TAG, "imageTokenResponse = " + imageTokenResponse);
+
+                    return ReCaptcha.substringBetween(imageTokenResponse, "('", "',");
+                } finally {
+                    responseBody.close();
+                }
+            }
+
+            throw new ReCaptchaException("Received HTTP " + response.code());
         } finally {
-            httpClient.getConnectionManager().shutdown();
+            if (response != null) {
+                response.close();
+            }
         }
     }
 
-    private String getChallenge(final String publicKey) throws IOException, JSONException {
-        final HttpClient httpClient = this.createHttpClient();
+    @WorkerThread
+    private String getChallenge(@NonNull final String publicKey) throws ReCaptchaException, IOException, JSONException {
+        Response response = null;
 
         try {
-            final String challengeResponse = httpClient.execute(new HttpGet(String.format(ReCaptcha.CHALLENGE_URL, publicKey)), new BasicResponseHandler());
-            Log.d(ReCaptcha.TAG, "challengeResponse = " + challengeResponse);
+            response = new OkHttpClient().newCall(new Request.Builder()
+                .url(String.format(ReCaptcha.CHALLENGE_URL, publicKey))
+                .build()).execute();
 
-            this.challenge = new JSONObject(ReCaptcha.substringBetween(challengeResponse, "RecaptchaState = ", "}") + "}").getString("challenge");;
+            if (response.isSuccessful()) {
+                final ResponseBody responseBody = response.body();
 
-            return this.challenge;
+                try {
+                    final String challengeResponse = responseBody.string();
+                    Log.d(ReCaptcha.TAG, "challengeResponse = " + challengeResponse);
+
+                    this.challenge = new JSONObject(ReCaptcha.substringBetween(challengeResponse, "RecaptchaState = ", "}") + "}").getString("challenge");
+
+                    return this.challenge;
+                } finally {
+                    responseBody.close();
+                }
+            }
+
+            throw new ReCaptchaException("Received HTTP " + response.code());
         } finally {
-            httpClient.getConnectionManager().shutdown();
+            if (response != null) {
+                response.close();
+            }
         }
     }
 
-    private boolean submitAnswer(final String privateKey, final String answer) throws IOException {
-        final HttpClient          httpClient = this.createHttpClient();
-        final HttpPost            request    = new HttpPost(ReCaptcha.VERIFICATION_URL);
-        final List<NameValuePair> params     = new ArrayList<>();
-
-        params.add(new BasicNameValuePair("privatekey", privateKey));
-        params.add(new BasicNameValuePair("remoteip", "127.0.0.1"));
-        params.add(new BasicNameValuePair("challenge", this.imageToken));
-        params.add(new BasicNameValuePair("response", answer));
+    @WorkerThread
+    private boolean submitAnswer(@NonNull final String privateKey, @NonNull final String answer) throws IOException {
+        Response response = null;
 
         try {
-            request.setEntity(new UrlEncodedFormEntity(params, HTTP.UTF_8));
+            response = new OkHttpClient().newCall(new Request.Builder()
+                .url(ReCaptcha.VERIFICATION_URL)
+                .post(new FormBody.Builder()
+                    .add("privatekey", privateKey)
+                    .add("remoteip", "127.0.0.1")
+                    .add("challenge", this.imageToken)
+                    .add("response", answer)
+                    .build())
+                .build()).execute();
 
-            return httpClient.execute(request, new BasicResponseHandler()).startsWith("true");
-        } catch (final UnsupportedEncodingException e) {
-            Log.e(ReCaptcha.TAG, "UTF-8 encoding is not supported on this platform", e);
+            if (response.isSuccessful()) {
+                final ResponseBody responseBody = response.body();
+
+                try {
+                    return responseBody.string().startsWith("true");
+                } finally {
+                    responseBody.close();
+                }
+            }
         } finally {
-            httpClient.getConnectionManager().shutdown();
+            if (response != null) {
+                response.close();
+            }
         }
 
         return false;
     }
 
-    private static String substringBetween(final String str, final String open, final String close) {
+    private static String substringBetween(@Nullable final String str, @Nullable final String open, @Nullable final String close) {
         if (str == null || open == null || close == null) {
             return null;
         }

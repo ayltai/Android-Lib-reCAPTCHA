@@ -205,7 +205,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
 group   = 'android.lib.recaptcha'
-version = '1.0.3'
+version = '2.0.0'
 
 android {
     compileSdkVersion 23
@@ -216,8 +216,8 @@ android {
     defaultConfig {
         minSdkVersion 4
         targetSdkVersion 23
-        versionCode 4
-        versionName "1.0.3"
+        versionCode 5
+        versionName "2.0.0"
     }
 
     buildTypes {
@@ -230,6 +230,8 @@ android {
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'com.android.support:support-v4:+'
+    compile 'com.squareup.okhttp3:okhttp:+'
 }
 
 uploadArchives {
