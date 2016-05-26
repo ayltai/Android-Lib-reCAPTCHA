@@ -337,7 +337,7 @@ public class ReCaptcha extends ImageView {
      * Forces the widget to render in a specific language.
      * <p>Auto-detects the user's language if unspecified.</p>
      * @param languageCode A valid language code.
-     * @see [https://developers.google.com/recaptcha/docs/language]
+     * @see <a href="https://developers.google.com/recaptcha/docs/language">https://developers.google.com/recaptcha/docs/language</a>
      */
     public void setLanguageCode(final String languageCode) {
         this.languageCode = languageCode;

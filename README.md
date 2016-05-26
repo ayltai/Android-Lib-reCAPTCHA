@@ -1,7 +1,7 @@
 Android-Lib-reCAPTCHA
 =====================
 
-[ ![Download](https://api.bintray.com/packages/ayltai/maven/Android-Lib-reCAPTCHA/images/download.svg) ](https://bintray.com/ayltai/maven/Android-Lib-reCAPTCHA/_latestVersion)
+[![Download](https://api.bintray.com/packages/ayltai/maven/Android-Lib-reCAPTCHA/images/download.svg)](https://bintray.com/ayltai/maven/Android-Lib-reCAPTCHA/_latestVersion)  [![CircleCI](https://circleci.com/gh/ayltai/Android-Lib-reCAPTCHA/tree/master.svg?style=svg)](https://circleci.com/gh/ayltai/Android-Lib-reCAPTCHA/tree/master)
 
 The reCAPTCHA Android Library provides a simple way to show a <a href="http://www.google.com/recaptcha/captcha">CAPTCHA</a> as an <code>ImageView</code> in your Android app, helping you stop bots from abusing it. The library wraps the <a href="https://developers.google.com/recaptcha/intro">reCAPTCHA API</a>.
 
@@ -68,6 +68,12 @@ To verify user input, pass the input string to `ReCaptcha.verifyAnswerAsync` (or
 `onVerifyAnswerListener` is an instance of `ReCaptcha.OnVerifyAnswerListener`, which is called when an attempt to verify the user input is completed.
 
 The synchronous version of this method is `verifyAnwser`.
+
+**Specify a locale**
+
+You can force the widget to render in a specific language. Please refer to [this page](https://developers.google.com/recaptcha/docs/language).
+
+`reCaptcha.setLanguageCode("fr");`
 
 Sample Application
 ------------------
