@@ -281,6 +281,7 @@ public class SampleActivity extends Activity implements View.OnClickListener, Re
         this.progress.setVisibility(View.VISIBLE);
         this.reCaptcha.setVisibility(View.GONE);
 
+        this.reCaptcha.setLanguageCode("en");
         this.reCaptcha.showChallengeAsync(SampleActivity.PUBLIC_KEY, this);
     }
 
