@@ -211,8 +211,6 @@ android {
     compileSdkVersion 23
     buildToolsVersion '23.0.3'
 
-    useLibrary 'org.apache.http.legacy'
-
     defaultConfig {
         minSdkVersion 4
         targetSdkVersion 23
@@ -261,5 +259,5 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 
 artifacts {
     archives sourcesJar
-    archives javadocJar
+    //archives javadocJar
 }
