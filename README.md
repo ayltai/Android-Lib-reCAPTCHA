@@ -3,6 +3,13 @@ Android-Lib-reCAPTCHA
 
 [![Download](https://api.bintray.com/packages/ayltai/maven/Android-Lib-reCAPTCHA/images/download.svg)](https://bintray.com/ayltai/maven/Android-Lib-reCAPTCHA/_latestVersion) [![Build Status](https://travis-ci.org/ayltai/Android-Lib-reCAPTCHA.svg?branch=master)](https://travis-ci.org/ayltai/Android-Lib-reCAPTCHA) [![CircleCI](https://circleci.com/gh/ayltai/Android-Lib-reCAPTCHA/tree/master.svg?style=svg)](https://circleci.com/gh/ayltai/Android-Lib-reCAPTCHA/tree/master) [![Codeship Status for ayltai/Android-Lib-reCAPTCHA](https://codeship.com/projects/11617a20-0542-0134-c052-52d3a6e8b2fb/status?branch=master)](https://codeship.com/projects/154375) [![Build Status](https://www.bitrise.io/app/f841e281ea9f60f8.svg?token=vz-fpO2sL5otS0IGQegCSA&branch=master)](https://www.bitrise.io/app/f841e281ea9f60f8)  [![BuddyBuild](https://dashboard.buddybuild.com/api/statusImage?appID=5748647cff80170100275e94&branch=master&build=latest)](https://dashboard.buddybuild.com/apps/5748647cff80170100275e94/build/latest)
 
+**This project is no longer maintained**
+
+*reCAPTCHA v1 is official unsupported since May of 2016 ([Link](https://developers.google.com/recaptcha/docs/versions)):*
+> reCAPTCHA V1 has been deprecated since May of 2016 and will not work for new sites. reCAPTCHA v1 is no longer supported and continued functionality can not be guaranteed. Please switch to one of the options above.
+
+*reCAPTCHA v2 is purely JavaScript based which makes it Android-unfriendly.*
+
 The reCAPTCHA Android Library provides a simple way to show a <a href="http://www.google.com/recaptcha/captcha">CAPTCHA</a> as an <code>ImageView</code> in your Android app, helping you stop bots from abusing it. The library wraps the <a href="https://developers.google.com/recaptcha/intro">reCAPTCHA API</a>.
 
 <img src="https://raw.githubusercontent.com/ayltai/Android-Lib-reCAPTCHA/master/screenshot.png" width="422" height="714" alt="Screenshot" />
